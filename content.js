@@ -1,10 +1,19 @@
-﻿$( '.gs_ri' ).each(function( index ) {
+﻿var ccl_mid = $("#gs_res_ccl_mid");
+var button = $('<button type="button" style="margin-bottom:5px;">Show All DOIs</button>')
+var ccl_mid_content = $('<div id="ccl_mid_content" style="display:none;padding:10px;background:#f5f5f5;"></div>');
+button.on("click", () => {
+  ccl_mid_content.toggle();
+})
+ccl_mid.append(button);
+ccl_mid.append(ccl_mid_content);
 
-  var paper = $(  this );
+$('.gs_ri').each(function (index) {
 
-  if (paper.children( '.gs_a' ).text().split('-')[1].includes("arXiv")) {
+  var paper = $(this);
+
+  if (paper.children('.gs_a').text().split('-')[1].includes("arXiv")) {
     // Check if it's an arXiv ID first.
-    var arxivid = paper.children( '.gs_rt' ).children().first().attr("href").split('abs/')[1];
+    var arxivid = paper.children('.gs_rt').children().first().attr("href").split('abs/')[1];
     var a = $('<a>Bibtex</a>');
     a.attr("title", 'Bibtex');
 
@@ -13,19 +22,18 @@
     paper.children('.gs_fl').append(a);
 
   } else {
-
     // Parse the DOIs and do a search
     var query = 'https://api.crossref.org/works?rows=1&sort=relevance&query.bibliographic=';
-    var title = paper.children( '.gs_rt' ).children().last().text().trim();
+    var title = paper.children('.gs_rt').children().last().text().trim();
     var authors = paper.children('.gs_a').text().split('-')[0].split(' ');
 
     query += encodeURIComponent(title); // Get Title
     query += '&query.author=';
-    for (j = 1; j < authors.length; j=j+2) { // Add Authors Last Name
+    for (j = 1; j < authors.length; j = j + 2) { // Add Authors Last Name
       query += encodeURIComponent(authors[j].trim().replace(/[,….]/g, ''));
-      if (j < authors.length-2) {
+      if (j < authors.length - 2) {
         query += '+'
-        if (j%2 == 1){
+        if (j % 2 == 1) {
           query += 'and+'
         }
       }
@@ -37,33 +45,25 @@
     query += '&mailto=' + encodeURIComponent('s@swdg.io');
 
     $.ajax({
-      url:query,
+      url: query,
       async: true,
       dataType: 'json',
-      success:function(data){
-          var doi = data.message.items[0].DOI;
-          var rettitle = cleanTitle(data.message.items[0].title[0]);
-          title = cleanTitle(title);
+      success: function (data) {
+        var doi = data.message.items[0].DOI;
+        var rettitle = cleanTitle(data.message.items[0].title[0]);
+        title = cleanTitle(title);
 
-          if (rettitle === title){ // Check whether the cleaned titles match
-            var a = $('<a>Bibtex</a>');
-            a.attr("title", 'Bibtex');
-            
-            a.attr("href", 'https://www.doi2bib.org/bib/' + doi);
-
-          } else if (titleLengthCompare(rettitle, title)) {  //check for match on titles of different lengths
-
-            var a = $('<a>Bibtex</a>');
-            a.attr("title", 'Bibtex');
-            
-            a.attr("href", 'https://www.doi2bib.org/bib/' + doi);
-
-          } else {
-            var a = $('<a>No DOI Found</a>');
-          }
-
-          paper.children('.gs_fl').append(a);
-
+        if (rettitle === title) { // Check whether the cleaned titles match
+          var a = $('<a>' + doi + '</a>');
+          a.attr("href", "https://doi.org/" + doi);
+        } else if (titleLengthCompare(rettitle, title)) {  //check for match on titles of different lengths
+          var a = $('<a>' + doi + '</a>');
+          a.attr("href", "https://doi.org/" + doi);
+        } else {
+          var a = $('<a>No DOI Found</a>');
+        }
+        paper.children('.gs_fl').append(a);
+        ccl_mid_content.append($('<div>' + doi + '</div>'));
       }
     });
   }
@@ -74,7 +74,7 @@ function cleanTitle(title) {
   return title.toLowerCase().replace(/[^a-z0-9]+/gi, ' ');
 }
 
-function titleLengthCompare(title1, title2){
+function titleLengthCompare(title1, title2) {
   // In cases where we have long titles, google scholar truncates them.
   // This function compares the truncated title with a similar truncation of
   // the title from crossref. Returns true for a match and false otherwise.
@@ -82,7 +82,7 @@ function titleLengthCompare(title1, title2){
   var long = title2
 
   // We can't know which of the args will be the longest, so sort them here
-  if (title1.length > title2.length){
+  if (title1.length > title2.length) {
     short = title2;
     long = title1;
   }
@@ -93,7 +93,7 @@ function titleLengthCompare(title1, title2){
 
   longArray = longArray.slice(0, shortArray.length)
 
-  if (longArray.join(' ') === shortArray.join(' ')){
+  if (longArray.join(' ') === shortArray.join(' ')) {
     return true;
   }
 
